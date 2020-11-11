@@ -40,10 +40,10 @@ local config = {
 }
 
 --start IRC services 
- --get any messages to fill the chat window???
 
+local server = false
 if oauth then
-   local server = irc.new{nick = config.ircNick}
+   server = irc.new{nick = config.ircNick}
    server:connect({nick = config.ircNick, password = oauth, host = config.ircHost, port = config.ircPort})
    server:join(config.ircChannel)
 end
@@ -339,14 +339,14 @@ local settingsTexts = {
    end},
    
    {config = "ircChannel", cue = 'Channel name', text = 'IRC_reconnect', press = function(self) 
-      local channel = self._parent.text
       if server then
-         if channel and channel ~= '' then
+         if self._parent.text and self._parent.text ~= '' then
             server:part(config.ircChannel)
             self._parent.text = string.lower(self._parent.text)--irc channel names are always lower case
             config.ircChannel = self._parent.text
             server:join(config.ircChannel)
             alertBar.text = config.ircChannel
+            self._parent.text = ''
          else
             self._parent.text = config.ircChannel
          end
@@ -425,7 +425,8 @@ function win:keyup(key)
       self:close()
    elseif key == 'enter' then
       if settingsLayer.visible and pressedElement then
-         _,_,pressedElement.text = string.find(pressedElement.text,'([^\n])')
+         --_,_,pressedElement.text = string.find(pressedElement.text,'([^\n])')
+         pressedElement.text=string.gsub(pressedElement.text,"[\r\n]+","")
       else
          editBox.text = ''
          chatUpdated = true      
@@ -447,6 +448,7 @@ function runningLoop()
       if chatUpdated then
          chatUpdated = false
          scroll_to_bottom()
+         shrinkTimeout = 0
          if config.autoExpand and shrinkState then
             shrinkToggle() 
             shrinkTimeout = -config.autoShrinkTimeoutOpenBuffer
