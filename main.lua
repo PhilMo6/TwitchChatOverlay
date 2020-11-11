@@ -24,20 +24,23 @@ local config = {
    editBoxPadding = 10,
    windowPositionPaddingX = 20,
    windowPositionPaddingY = 40,
+   chatColor = '#cecece',
+   userColor = '#26a621',
    selectedColor = '#be0000',
    ircHost = "irc.chat.twitch.tv",
    ircPort = 6667,
-   --ircNick = "dude_man_the_fourth",
-   ircChannel = '#channel_name',
-   ircNick = "User_nick",
+   ircChannel = '#channel_Name',
+   ircNick = "user_nick",
    autoExpand = true,
    autoShrink = true,
    autoShrinkTimeout = 5,
    autoShrinkTimeoutOpenBuffer = 10,
    shrinkToTop = false,
+   chatLimit = 100,
 }
 
 --start IRC services 
+ --get any messages to fill the chat window???
 
 if oauth then
    local server = irc.new{nick = config.ircNick}
@@ -153,31 +156,6 @@ local chatBox = ui:scrollbox{
 		border_width = 0,
    })
    
-   --[[
-  local testNick = ui.editbox{
-      parent = chatBoxContent, 
-      w = 50,
-      h = 20, 
-      x = 0,
-      y = 14,
-      text = config.ircNick,
-      --text_selectable = false,
-      focusable = true,
-      text_editable = false,
-      tags = 'testNick',
-   }
-   testNick.w = string.len(testNick.text) * 7.8
-   
-   ui:style('editbox testNick', {
-      background_color = '#222222',
-      border_width_bottom = 0,
-      border_width_top = 0,
-      border_width_right = 0,
-      border_width_left = 0,
-      text_color = '#e31e00',
-      })
-   ]]
-   
    
 local function scroll_to_bottom()
     chatBox.vscrollbar.offset =  chatBox.vscrollbar.content_length
@@ -185,12 +163,18 @@ end
 
 chatUpdated = false
 local function updateChatbox(nick,txt)
-   --chatBoxText = string.format("%s\n%s: %s",chatBoxText, nick, txt)
-   --chatBox.content.text = chatBoxText
    table.insert(chatTextTree,{
-      color = '#26a621',
-      'test',
+   {   color = config.userColor,
+     string.format('\n%s: ',nick)},
+   {   color = config.chatColor,
+      txt}
    })
+   if #chatTextTree > config.chatLimit then
+      table.remove(chatTextTree,2)
+   end
+   chatBoxContent._text = false
+   chatBoxContent._text_tree = false
+   chatBoxContent.text_segments = false
    chatBoxContent.text = chatTextTree
    chatUpdated = true
 end
@@ -232,7 +216,7 @@ ui:style('editbox editBoxChat', {
 	border_width_left = -1,
 })
 ui:style('editbox > cue_layer', {
-	text_color = '#000000',
+	text_color = config.chatColor,
 })
 
 local alertBarW, alertBarH = config.windowWidth - 54, 27
@@ -259,7 +243,7 @@ ui:style('editbox alert', {
    border_width_top = 0,
    border_width_right = 0,
    border_width_left = 0,
-   text_color = '#e31e00',
+   text_color = config.selectedColor,
 })
 
 
@@ -278,6 +262,7 @@ local settingsMoveButton = ui:button{
    x = 5,
    y = 30,
    text = 'Drag to move',       --sized to fit the text by default
+   tags = 'settingsText',
 }
 
 function settingsMoveButton:mousemove(mx, my)
@@ -291,7 +276,6 @@ end
 
 
 
---local alertBarW, alertBarH = config.windowWidth - 54, 27
 local settingsX, settingsY = 5, 90
 local settingsChecks = {
    {config = "autoExpand", text = 'Auto Expand'},
@@ -345,6 +329,15 @@ local settingsTexts = {
       end
    end},
    
+   {config = "chatLimit", text = 'Chat_Limit', press = function(self)
+      local _,_,limit = string.find(self._parent.text,'(%d+)')
+      if limit then
+         config.chatLimit = tonumber(limit)
+      else
+         self._parent.text = tostring(config.chatLimit)
+      end
+   end},
+   
    {config = "ircChannel", cue = 'Channel name', text = 'IRC_reconnect', press = function(self) 
       local channel = self._parent.text
       if server then
@@ -380,6 +373,7 @@ for i,configToSet in ipairs(settingsTexts) do
       x = 5,
       y = 25,
       text = configToSet.text,       --sized to fit the text by default
+      tags = 'settingsText',
 
    }
 
@@ -392,21 +386,15 @@ end
 
 
 
-
-
-
-
-
-
 --style edit box
-ui:style('editbox settingsText', {
+ui:style('element settingsText', {
    background_color = '#222222',
    border_color = '#181818',
    border_width_bottom = 0,
    border_width_top = 0,
    border_width_right = 0,
    border_width_left = 0,
-   text_color = '#e31e00',
+   text_color = config.selectedColor,
 })
 
 
